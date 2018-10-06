@@ -2,26 +2,22 @@
 tests for wadden_mudflat code
 """
 
-from datetime import datetime
-
 import pytest
+
+
+from datetime import datetime
+import numpy as np
+
 from wadden_mudflats import Delft3D_Mudflats
 
 import gridded
 
-
-infile = "../PACE_GNOME_01V2.nc"
+infile = "./PACE_GNOME_01V2.nc"
 
 
 @pytest.fixture
 def dataset():
-    grid_topology = {"node_lat": "latc",
-                     "node_lon": "lonc",
-                     "center_lon": "lon",
-                     "center_lat": "lat",
-                     }
-
-    ds = gridded.Dataset(infile, grid_topology=grid_topology)
+    ds = gridded.Dataset(infile)
 
     return ds
 
@@ -55,19 +51,47 @@ def test_contents(dataset):
 
 def test_is_dry(dataset):
 
-    tf = Delft3D_Mudflats(dataset)
+    # depth and time where tehre is some dry
+    tf = Delft3D_Mudflats(dataset, dry_depth=0.0)
 
-    points = ((53.3, 5.2),
-              (53.3, 5.3),
-              (53.25, 5.2)
+    points = ((5.2, 53.3),
+              (5.3, 53.3),
+              (5.2, 53.25),
+              (5.424411, 53.218140),
+              )
+
+    time = datetime(2009, 1, 15, 6)
+
+    result = tf.is_dry(points, time)
+
+    print result
+
+    assert np.alltrue(result == [False, True, True, False])
+
+
+def test_outside_grid(dataset):
+    """
+    what happens is the elements are outside the grid??
+
+    should always be True
+
+    """
+
+    tf = Delft3D_Mudflats(dataset, dry_depth=-10000)  # make sure nothing is dry
+
+    points = ((3.5, 54.0),  # off
+              (7.5, 53.4),  # off
+              (6.0, 52.0),  # off
+              (5.3, 53.3),  # on
+              (5.2, 53.25),  # on
               )
 
     time = datetime(2009, 1, 15, 0)
 
     result = tf.is_dry(points, time)
 
-    print result
+    print "results", result
 
-    assert False
+    assert list(result) == [True, True, True, False, False]
 
 

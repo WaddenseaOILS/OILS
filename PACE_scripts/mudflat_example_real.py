@@ -13,6 +13,8 @@ to implement the TideFlat object
 
 import os
 
+from datetime import datetime
+
 # This brings in the common names needed to run py_gnome
 # for the "usual" cases.
 import gnome.scripting as gs
@@ -33,7 +35,7 @@ data_dir = os.path.dirname(__file__) # same dir as this script
 # Simulation outputs:
 # use this place to script the folder based on test number or something
 # it will be a relative path to this script
-out_dir = 'mudflat_test'
+out_dir = 'mudflat_test_real'
 
 # Model parameters:
 start_time = "2009-01-01"  # time 00:00 if you don't specify
@@ -50,7 +52,7 @@ Wind = {"speed": 10, "direction": 270, "units": "m/s"}
 
 # SpillPosition = (5.122382, 53.327899, 0) # tussen VL en TX
 SpillPosition = (5.210218, 53.231510, 0)  # route Harlingen Terschelling
-##
+
 
 # Model Parameters:
 base_dir = os.path.dirname(__file__)
@@ -65,29 +67,6 @@ model = gs.Model(start_time=start_time,
                  time_step=gs.minutes(30)
                  )
 
-bounds = ((5.399281, 53.283564),
-          (5.323750, 53.279459),
-          (5.246845, 53.243314),
-          (5.204273, 53.195623),
-          (5.197407, 53.137170),
-          (5.226246, 53.096783),
-          (5.307270, 53.093485),
-          (5.413014, 53.113272),
-          (5.447346, 53.190687),
-          (5.525624, 53.245779),
-          )
-tideflat = SimpleTideflat(bounds,
-                          "2009-01-01T09:00",
-                          "2009-01-01T018:00"
-                          )
-
-
-print 'Adding  map'
-mapfile = os.path.join(data_dir, 'Waddensea_ijsselmeer_6.bna')
-land_map = gs.MapFromBNA(mapfile)
-
-model.map = TideflatMap(land_map, tideflat)
-# model.map = land_map
 
 print 'Loading current'
 current = gs.GridCurrent.from_netCDF(os.path.join(data_dir, currentfile))
@@ -96,11 +75,21 @@ angle = TimeseriesData.constant(name='angle', data=17.0, units='degrees')
 current.angle = angle
 current_mover = PyCurrentMover(current=current)
 
-print 'Adding RandomMover'
-model.movers += gs.RandomMover(diffusion_coeff=50000)
+print 'Adding  map'
+
+tideflat = Delft3D_Mudflats(currentfile, dry_depth=0.0)
+
+mapfile = os.path.join(data_dir, 'Waddensea_ijsselmeer_6.bna')
+land_map = gs.MapFromBNA(mapfile)
+
+model.map = TideflatMap(land_map, tideflat)
+# model.map = land_map
 
 print 'Adding current'
 model.movers += current_mover
+
+print 'Adding RandomMover'
+model.movers += gs.RandomMover(diffusion_coeff=50000)
 
 print 'adding a wind mover:'
 
