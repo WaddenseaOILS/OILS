@@ -103,3 +103,5 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+PACE_GNOME01V2.nc
