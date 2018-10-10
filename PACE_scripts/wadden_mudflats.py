@@ -73,6 +73,9 @@ class Delft3D_Mudflats(TideflatBase):
 
         # elements off grid will get -1 -- so valid, but incorrect
         # so reset here.
-        dry[off_grid] = True
+        # must be False, as otherwise they would never move again.
+        # though if there is a gap between the grid and the shoreline,
+        # this won't be technically right, but should be reasonable
+        dry[off_grid] = False
 
         return dry
